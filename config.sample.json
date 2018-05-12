@@ -1,0 +1,11 @@
+{
+  "db": {
+    "local": "http://localhost:5984",
+    "seed": "http://main-server:5984",
+    "name": "clients",
+    "priority": 100,
+    "process_conflicts": true,
+    "keep_alive": 2000,
+    "retry_master": 10000
+  }
+}
