@@ -4,6 +4,8 @@ const express = require('express')
 const nunjucks = require('nunjucks')
 const storage = require('./syncable-storage')
 
+const config = require('./config.json')
+
 const app = express()
 nunjucks.configure('views', {
   express: app
@@ -11,7 +13,7 @@ nunjucks.configure('views', {
 app.set('view engine', 'njk')
 
 app.get('/', (req, res) => {
-  storage()
+  storage(config.db)
   res.render('index')
 })
 

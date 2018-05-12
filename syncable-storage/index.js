@@ -1,3 +1,3 @@
 'use strict'
 
-exports = module.exports = () => console.log('AZAZA')
+exports = module.exports = (config) => console.log(config)
