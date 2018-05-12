@@ -2,6 +2,7 @@
 
 const express = require('express')
 const nunjucks = require('nunjucks')
+const os = require('os')
 const storage = require('./syncable-storage')
 
 const config = require('./config.json')
@@ -12,9 +13,13 @@ nunjucks.configure('views', {
 })
 app.set('view engine', 'njk')
 
+const db = storage(config.db)
+
 app.get('/', (req, res) => {
-  storage(config.db)
-  res.render('index')
+  res.render('index', {
+    bad_url: config.db.local_url.includes('localhost'),
+    interfaces: os.networkInterfaces()
+  })
 })
 
 app.listen(3000,

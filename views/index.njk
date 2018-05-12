@@ -5,5 +5,22 @@
 {% endblock %}
 
 {% block body %}
+  {% if bad_url %}
+    <p>Внимание! <code>local_url</code>, указанный
+      в&nbsp;<tt>config.json</tt>, нельзя использовать
+      для&nbsp;удалённого подключения
+      к&nbsp;данному компьютеру.</p>
+  {% endif %}
+
+  <p>Список IP-адресов:</p>
+  <ul>
+    {% for name, ips in interfaces %}
+      <li>
+        <b>{{ name }}: </b>
+        <tt>{{ ips | join(', ', 'address') }}</tt>
+      </li>
+    {% endfor %}
+  </ul>
+
   Тут должна быть таблица, но я её не нарисовал :(
 {% endblock %}
