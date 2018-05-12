@@ -1,0 +1,22 @@
+{
+  "name": "syncable-storage",
+  "version": "1.0.0",
+  "description": "Reliable syncable storage",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "couchdb",
+    "sync",
+    "nodejs"
+  ],
+  "author": "Artem Leshchev",
+  "license": "MIT",
+  "dependencies": {
+    "nano": "^6.4.3"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
+  }
+}
