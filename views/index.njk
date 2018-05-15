@@ -5,12 +5,23 @@
 {% endblock %}
 
 {% block body %}
+  {% if master %}
+    <p>Данный сервер сконфигурирован как мастер-сервер.</p>
+  {% endif %}
+
+  {% if process_conflicts %}
+    <p>Данный сервер автоматически разрешает все конфликты в фоновом режиме.</p>
+  {% endif %}
+
   {% if bad_url %}
     <p>Внимание! <code>local_url</code>, указанный
       в&nbsp;<tt>config.json</tt>, нельзя использовать
       для&nbsp;удалённого подключения
       к&nbsp;данному компьютеру.</p>
   {% endif %}
+
+  <p><a href="{{ local_url }}/_utils/" target="_blank">
+    Доступ к&nbsp;интерфейсу СУБД</a></p>
 
   <p>Список IP-адресов:</p>
   <ul>

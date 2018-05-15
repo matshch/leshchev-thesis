@@ -18,6 +18,9 @@ const db = storage(config.db)
 app.get('/', (req, res) => {
   res.render('index', {
     bad_url: config.db.local_url.includes('localhost'),
+    local_url: config.db.local_url,
+    master: !config.db.seed,
+    process_conflicts: config.db.process_conflicts,
     interfaces: os.networkInterfaces()
   })
 })
