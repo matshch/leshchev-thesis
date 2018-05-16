@@ -232,6 +232,6 @@ exports = module.exports = config => {
     update: doc => console.log('Updating doc: ', doc),
     delete: (id, rev) => console.log('Removing ', id),
     list: () => console.log('Getting full list'),
-    getMaster: () => console.log('This is our master')
+    getMaster: () => Promise.resolve(currentMaster)
   }
 }
