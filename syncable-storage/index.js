@@ -14,12 +14,41 @@ function doAndIgnore (promise) {
   })
 }
 
+function myNano (url) {
+  const couch = nano({
+    requestDefaults: {
+      jar: false,
+      timeout: 3000
+    },
+    url: url
+  })
+
+  // Promisify all
+  Promise.promisifyAll(couch)
+  if (couch.db) {
+    Promise.promisifyAll(couch.db)
+
+    // Promisify even use
+    const oldUse = couch.use
+    const newUse = dbName => {
+      const obj = oldUse(dbName)
+      Promise.promisifyAll(obj)
+      return obj
+    }
+    couch.scope = newUse
+    couch.use = newUse
+    couch.db.scope = newUse
+    couch.db.use = newUse
+  }
+
+  return couch
+}
+
 function updateReplication (couch, local, target, name) {
   const nodesDb = name + '/$nodes'
   const repDb = name + '/_replicator'
 
   const replicator = couch.use(repDb)
-  Promise.promisifyAll(replicator)
 
   return new Promise((resolve, reject) => {
     // Recreate replicator database
@@ -69,16 +98,10 @@ exports = module.exports = config => {
     encodeURIComponent(repDb) + '/'
 
   // Create connection objects
-  const couch = nano(config.local_url)
+  const couch = myNano(config.local_url)
   const db = couch.use(config.name)
   const nodes = couch.use(nodesDb)
   // const replicator = couch.use(repDb)
-
-  // Turn everything in promises
-  Promise.promisifyAll(couch)
-  Promise.promisifyAll(couch.db)
-  Promise.promisifyAll(nodes)
-  // Promise.promisifyAll(replicator)
 
   // Create replicatable databases
   doAndIgnore(couch.db.createAsync(config.name))
@@ -97,11 +120,13 @@ exports = module.exports = config => {
     })
   })
 
-  // Replicate from seed
-  updateReplication(couch, config.local_url,
-    config.seed, config.name).then(() => {
-    setTimeout(checkReplication, config.keep_alive)
-  })
+  if (config.seed) {
+    // Replicate from seed
+    updateReplication(couch, config.local_url,
+      config.seed, config.name).then(() =>
+      setTimeout(checkReplication, config.keep_alive)
+    )
+  }
 
   // Check replication status
   function checkReplication () {
@@ -110,25 +135,59 @@ exports = module.exports = config => {
     const pullDb = couch.requestAsync(schUrl + PULL_DB)
     const pushDb = couch.requestAsync(schUrl + PUSH_DB)
 
-    Promise.join(pullNodes, pushNodes, pullDb, pushDb,
-      (pullNodes, pushNodes, pullDb, pushDb) => {
+    const remote = pullNodes.then(
+      e => myNano(e.source).infoAsync().reflect())
+
+    Promise.join(pullNodes, pushNodes, pullDb, pushDb, remote,
+      (pullNodes, pushNodes, pullDb, pushDb, remote) => {
         const goodState = 'running'
         if (pullNodes.state !== goodState ||
           pushNodes.state !== goodState ||
           pullDb.state !== goodState ||
-          pushDb.state !== goodState) {
+          pushDb.state !== goodState ||
+          remote.isRejected()) {
           console.warn('Troubles with ', pullDb.source)
-          console.warn(pullNodes.info, pushNodes.info,
-            pullDb.info, pushDb.info)
+          console.warn(pullNodes, pushNodes, pullDb, pushDb,
+            remote.isRejected() ? remote.reason() : undefined)
 
+          // Prepare list of applicable masters
           nodes.listAsync({include_docs: true}).then(res => {
             return res.rows
               .map(e => e.doc)
               .filter(e => e._id !== config.uuid)
-              .sort((a, b) => a.priority - b.priority)
-          }).then(console.log)
-
-          // nano(config.local_url).use(nodesDb).info(console.log)
+              .sort((a, b) => (a.priority - b.priority ||
+                ((a._id < b._id) ? -1
+                  : ((a._id > b._id) ? 1 : 0))))
+          }).then(list => {
+            if (list.some(e => e.url === config.seed)) {
+              return list
+            } else {
+              return [
+                {
+                  url: config.seed
+                },
+                ...list
+              ]
+            }
+          }).then(async function (list) {
+            console.log('Will try following nodes: ', list)
+            for (const node of list) {
+              const t = await myNano(node.url).use(nodesDb)
+                .infoAsync().reflect()
+              if (t.isFulfilled()) {
+                console.log('Found new master ', node.url)
+                updateReplication(couch, config.local_url,
+                  node.url, config.name).then(() =>
+                  setTimeout(checkReplication,
+                    config.keep_alive)
+                )
+                return
+              }
+            }
+            console.warn('No masters found, will try later')
+            setTimeout(checkReplication,
+              config.retry_master)
+          })
         } else {
           // All good
           setTimeout(checkReplication, config.keep_alive)
