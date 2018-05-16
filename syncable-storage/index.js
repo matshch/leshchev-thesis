@@ -240,8 +240,33 @@ exports = module.exports = config => {
       }
       return db.insertAsync(doc)
     },
-    get: id => console.log('Getting ', id),
-    update: doc => console.log('Updating doc: ', doc),
+    get: id => {
+      // TODO: process conflicts
+      return db.getAsync(id)
+    },
+    update: (doc, orig) => {
+      const keys = new Set(
+        Object.keys(doc).concat(Object.keys(orig)))
+      keys.delete('$times')
+      const now = new Date().valueOf()
+
+      doc._id = orig._id
+      doc._rev = orig._rev
+      doc.$times = orig.$times
+
+      for (const key of keys) {
+        if (doc[key] !== orig[key]) {
+          // Maybe it is just not values?..
+          if (JSON.stringify(doc[key]) !==
+            JSON.stringify(orig[key])) {
+            doc.$times[key] = now
+          }
+        }
+      }
+
+      // TODO: process conflicts
+      return db.insertAsync(doc)
+    },
     delete: (id, rev) => console.log('Removing ', id),
     list: () => console.log('Getting full list'),
     getMaster: () => Promise.resolve(currentMaster)
