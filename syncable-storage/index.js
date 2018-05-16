@@ -126,6 +126,9 @@ exports = module.exports = config => {
       config.seed, config.name).then(() =>
       setTimeout(checkReplication, config.keep_alive)
     )
+  } else {
+    console.warn(
+      'No seed configured, so no replication enabled.')
   }
 
   // Check replication status
