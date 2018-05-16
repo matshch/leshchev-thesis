@@ -208,6 +208,7 @@ exports = module.exports = config => {
     get: id => console.log('Getting ', id),
     update: doc => console.log('Updating doc: ', doc),
     delete: (id, rev) => console.log('Removing ', id),
-    list: () => console.log('Getting full list')
+    list: () => console.log('Getting full list'),
+    getMaster: () => console.log('This is our master')
   }
 }
