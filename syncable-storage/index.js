@@ -231,7 +231,15 @@ exports = module.exports = config => {
 
   // Passing CRUD operations
   return {
-    create: doc => console.log('Creating doc: ', doc),
+    create: doc => {
+      const keys = Object.keys(doc)
+      const now = new Date().valueOf()
+      doc.$times = {}
+      for (const key of keys) {
+        doc.$times[key] = now
+      }
+      return db.insertAsync(doc)
+    },
     get: id => console.log('Getting ', id),
     update: doc => console.log('Updating doc: ', doc),
     delete: (id, rev) => console.log('Removing ', id),
