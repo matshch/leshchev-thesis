@@ -143,11 +143,12 @@ exports = module.exports = config => {
 
     Promise.join(pullNodes, pushNodes, pullDb, pushDb, remote,
       (pullNodes, pushNodes, pullDb, pushDb, remote) => {
-        const goodState = 'running'
-        if (pullNodes.state !== goodState ||
-          pushNodes.state !== goodState ||
-          pullDb.state !== goodState ||
-          pushDb.state !== goodState ||
+        const goodState = state =>
+          state === 'running' || state === null
+        if (!goodState(pullNodes.state) ||
+          !goodState(pushNodes.state) ||
+          !goodState(pullDb.state) ||
+          !goodState(pushDb.state) ||
           remote.isRejected()) {
           console.warn('Troubles with ', pullDb.source)
           console.warn(pullNodes, pushNodes, pullDb, pushDb,
