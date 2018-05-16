@@ -56,7 +56,7 @@ function updateReplication (couch, local, target, name) {
       couch.db.createAsync(repDb).then(() => {
         if (!target) {
           console.warn(
-            'No seed configured, so no replication enabled.')
+            'Replication was disabled for now.')
           return
         }
         // Everything is ready
@@ -189,8 +189,11 @@ exports = module.exports = config => {
               }
             }
             console.warn('No masters found, will try later')
-            setTimeout(checkReplication,
-              config.retry_master)
+            updateReplication(couch, config.local_url,
+              undefined, config.name).then(() =>
+              setTimeout(checkReplication,
+                config.retry_master)
+            )
           })
         } else {
           // All good
