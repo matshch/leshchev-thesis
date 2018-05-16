@@ -55,8 +55,7 @@ function updateReplication (couch, local, target, name) {
     doAndIgnore(couch.db.destroyAsync(repDb)).then(() => {
       couch.db.createAsync(repDb).then(() => {
         if (!target) {
-          console.warn(
-            'Replication was disabled for now.')
+          resolve()
           return
         }
         // Everything is ready
@@ -163,7 +162,7 @@ exports = module.exports = config => {
               config.keep_alive)
             return
           }
-          console.log('Found new master ', node.url)
+          console.log('Found new master', node.url)
           currentMaster = node.url
           updateReplication(couch, config.local_url,
             node.url, config.name).then(() =>
@@ -185,6 +184,13 @@ exports = module.exports = config => {
   // Check replication status
   let lastReselect = new Date()
   function checkReplication () {
+    if (!currentMaster) {
+      reselectMaster().then(() => {
+        lastReselect = new Date()
+      })
+      return
+    }
+
     const pullNodes = couch.requestAsync(schUrl + PULL_NODES)
     const pushNodes = couch.requestAsync(schUrl + PUSH_NODES)
     const pullDb = couch.requestAsync(schUrl + PULL_DB)
@@ -202,9 +208,7 @@ exports = module.exports = config => {
           !goodState(pullDb.state) ||
           !goodState(pushDb.state) ||
           remote.isRejected()) {
-          console.warn('Troubles with ', pullDb.source)
-          console.warn(pullNodes, pushNodes, pullDb, pushDb,
-            remote.isRejected() ? remote.reason() : undefined)
+          console.warn('Troubles with', pullDb.source)
 
           currentMaster = undefined
           reselectMaster().then(() => {
