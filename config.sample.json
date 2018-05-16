@@ -1,5 +1,6 @@
 {
   "db": {
+    "uuid": null,
     "local_url": "http://localhost:5984",
     "seed": "http://main-server:5984",
     "name": "clients",
