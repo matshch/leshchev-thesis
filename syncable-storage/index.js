@@ -268,7 +268,10 @@ exports = module.exports = config => {
       return db.insertAsync(doc)
     },
     delete: (id, rev) => console.log('Removing ', id),
-    list: () => console.log('Getting full list'),
+    list: () => db.listAsync({include_docs: true}).then(res =>
+      // TODO: process conflicts
+      res.rows.map(e => e.doc)
+    ),
     getMaster: () => Promise.resolve(currentMaster)
   }
 }
