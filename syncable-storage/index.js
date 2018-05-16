@@ -131,7 +131,57 @@ exports = module.exports = config => {
       'No seed configured, so no replication enabled.')
   }
 
+  let currentMaster = config.seed
+
+  function reselectMaster () {
+    // Prepare list of applicable masters
+    return nodes.listAsync({include_docs: true}).then(res => {
+      return res.rows
+        .map(e => e.doc)
+        .filter(e => e._id !== config.uuid)
+        .sort((a, b) => (a.priority - b.priority ||
+          ((a._id < b._id) ? -1
+            : ((a._id > b._id) ? 1 : 0))))
+    }).then(list => {
+      if (list.some(e => e.url === config.seed)) {
+        return list
+      } else {
+        return [
+          {
+            url: config.seed
+          },
+          ...list
+        ]
+      }
+    }).then(async function (list) {
+      console.log('Will try following nodes: ', list)
+      for (const node of list) {
+        const t = await myNano(node.url).use(nodesDb)
+          .infoAsync().reflect()
+        if (t.isFulfilled()) {
+          if (node.url === currentMaster) {
+            return
+          }
+          console.log('Found new master ', node.url)
+          updateReplication(couch, config.local_url,
+            node.url, config.name).then(() =>
+            setTimeout(checkReplication,
+              config.keep_alive)
+          )
+          return
+        }
+      }
+      console.warn('No masters found, will try later')
+      updateReplication(couch, config.local_url,
+        undefined, config.name).then(() =>
+        setTimeout(checkReplication,
+          config.retry_master)
+      )
+    })
+  }
+
   // Check replication status
+  let lastReselect = new Date()
   function checkReplication () {
     const pullNodes = couch.requestAsync(schUrl + PULL_NODES)
     const pushNodes = couch.requestAsync(schUrl + PUSH_NODES)
@@ -154,50 +204,19 @@ exports = module.exports = config => {
           console.warn(pullNodes, pushNodes, pullDb, pushDb,
             remote.isRejected() ? remote.reason() : undefined)
 
-          // Prepare list of applicable masters
-          nodes.listAsync({include_docs: true}).then(res => {
-            return res.rows
-              .map(e => e.doc)
-              .filter(e => e._id !== config.uuid)
-              .sort((a, b) => (a.priority - b.priority ||
-                ((a._id < b._id) ? -1
-                  : ((a._id > b._id) ? 1 : 0))))
-          }).then(list => {
-            if (list.some(e => e.url === config.seed)) {
-              return list
-            } else {
-              return [
-                {
-                  url: config.seed
-                },
-                ...list
-              ]
-            }
-          }).then(async function (list) {
-            console.log('Will try following nodes: ', list)
-            for (const node of list) {
-              const t = await myNano(node.url).use(nodesDb)
-                .infoAsync().reflect()
-              if (t.isFulfilled()) {
-                console.log('Found new master ', node.url)
-                updateReplication(couch, config.local_url,
-                  node.url, config.name).then(() =>
-                  setTimeout(checkReplication,
-                    config.keep_alive)
-                )
-                return
-              }
-            }
-            console.warn('No masters found, will try later')
-            updateReplication(couch, config.local_url,
-              undefined, config.name).then(() =>
-              setTimeout(checkReplication,
-                config.retry_master)
-            )
-          })
+          currentMaster = undefined
+          reselectMaster()
         } else {
           // All good
-          setTimeout(checkReplication, config.keep_alive)
+          if ((new Date() - lastReselect) <
+            config.retry_master) {
+            setTimeout(checkReplication, config.keep_alive)
+          } else {
+            // Maybe we need new master
+            reselectMaster().then(() => {
+              lastReselect = new Date()
+            })
+          }
         }
       })
   }
