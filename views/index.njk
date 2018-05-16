@@ -23,6 +23,15 @@
   <p><a href="{{ local_url }}/_utils/" target="_blank">
     Доступ к&nbsp;интерфейсу СУБД</a></p>
 
+  <p>Ведущий сервер:
+    {% if master_url %}
+      <a href="{{ master_url }}/_utils/" target="_blank">
+      {{ master_url }}</a>
+    {% else %}
+      недоступен.
+    {% endif %}
+  </p>
+
   <p>Список IP-адресов:</p>
   <ul>
     {% for name, ips in interfaces %}
