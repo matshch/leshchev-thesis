@@ -207,7 +207,9 @@ exports = module.exports = config => {
             remote.isRejected() ? remote.reason() : undefined)
 
           currentMaster = undefined
-          reselectMaster()
+          reselectMaster().then(() => {
+            lastReselect = new Date()
+          })
         } else {
           // All good
           if ((new Date() - lastReselect) <
