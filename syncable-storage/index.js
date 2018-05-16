@@ -154,15 +154,17 @@ exports = module.exports = config => {
         ]
       }
     }).then(async function (list) {
-      console.log('Will try following nodes: ', list)
       for (const node of list) {
         const t = await myNano(node.url).use(nodesDb)
           .infoAsync().reflect()
         if (t.isFulfilled()) {
           if (node.url === currentMaster) {
+            setTimeout(checkReplication,
+              config.keep_alive)
             return
           }
           console.log('Found new master ', node.url)
+          currentMaster = node.url
           updateReplication(couch, config.local_url,
             node.url, config.name).then(() =>
             setTimeout(checkReplication,
