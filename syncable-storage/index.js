@@ -148,7 +148,7 @@ exports = module.exports = config => {
     encodeURIComponent(repDb) + '/'
 
   // Create connection objects
-  const couch = myNano(config.local_url)
+  const couch = myNano('http://localhost:5984/')
   const db = couch.use(config.name)
   const nodes = couch.use(nodesDb)
   // const replicator = couch.use(repDb)
@@ -172,7 +172,7 @@ exports = module.exports = config => {
 
   if (config.seed) {
     // Replicate from seed
-    updateReplication(couch, config.local_url,
+    updateReplication(couch, 'http://localhost:5984/',
       config.seed, config.name).then(() =>
       setTimeout(checkReplication, config.keep_alive)
     )
@@ -215,7 +215,7 @@ exports = module.exports = config => {
           }
           console.log('Found new master', node.url)
           currentMaster = node.url
-          updateReplication(couch, config.local_url,
+          updateReplication(couch, 'http://localhost:5984/',
             node.url, config.name).then(() =>
             setTimeout(checkReplication,
               config.keep_alive)
@@ -224,7 +224,7 @@ exports = module.exports = config => {
         }
       }
       console.warn('No masters found, will try later')
-      updateReplication(couch, config.local_url,
+      updateReplication(couch, 'http://localhost:5984/',
         undefined, config.name).then(() =>
         setTimeout(checkReplication,
           config.retry_master)
