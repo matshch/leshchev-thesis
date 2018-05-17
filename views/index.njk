@@ -6,38 +6,60 @@
 
 {% block body %}
   {% if master %}
-    <p>Данный сервер сконфигурирован как мастер-сервер.</p>
+    <div class="alert alert-info">
+      Данный сервер сконфигурирован как ведущий сервер.
+    </div>
   {% endif %}
 
   {% if process_conflicts %}
-    <p>Данный сервер автоматически разрешает все конфликты в фоновом режиме.</p>
+    <div class="alert alert-success">
+      Данный сервер автоматически разрешает все конфликты
+      в фоновом режиме.
+    </div>
   {% endif %}
 
   {% if bad_url %}
-    <p>Внимание! <code>local_url</code>, указанный
-      в&nbsp;<tt>config.json</tt>, нельзя использовать
+    <div class="alert alert-danger">
+      Внимание! <code>local_url</code>, указанный
+      в&nbsp;<code>config.json</code>, нельзя использовать
       для&nbsp;удалённого подключения
-      к&nbsp;данному компьютеру.</p>
+      к&nbsp;данному компьютеру.
+    </div>
   {% endif %}
 
-  <p>Ведущий сервер:
+  <div class="alert alert-info">
+    Ведущий сервер:
     {% if master_url %}
       <a href="{{ master_url }}/_utils/" target="_blank">
       {{ master_url }}</a>
     {% else %}
       недоступен.
     {% endif %}
-  </p>
+  </div>
 
-  <p>Список IP-адресов:</p>
-  <ul>
-    {% for name, ips in interfaces %}
-      <li>
-        <b>{{ name }}: </b>
-        <tt>{{ ips | join(', ', 'address') }}</tt>
-      </li>
-    {% endfor %}
-  </ul>
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <button class="btn btn-link" type="button"
+          data-toggle="collapse" data-target="#collapseIps">
+          Список IP-адресов
+        </button>
+      </h5>
+    </div>
+
+    <div id="collapseIps" class="collapse">
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% for name, ips in interfaces %}
+            <li class="list-group-item">
+              <b>{{ name }}: </b>
+              <tt>{{ ips | join(', ', 'address') }}</tt>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
 
   Тут должна быть таблица, но я её не нарисовал :(
 {% endblock %}
