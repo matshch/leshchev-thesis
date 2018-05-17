@@ -1,0 +1,65 @@
+{% extends "template.njk" %}
+
+{% block header %}
+  Изменить посетителя
+{% endblock %}
+
+{% block body %}
+  <form action="/saveChanged" method="post">
+    <input type="hidden" name="$original"
+      value="{{ $original | dump }}">
+    <div class="form-group row">
+      <label for="family" class="col-sm-2 col-form-label">
+        Фамилия</label>
+      <div class="col-sm-10">
+        <input class="form-control" id="family" name="family"
+          value="{{ family }}">
+      </div>
+    </div>
+    <div class="form-group row">
+      <label for="name" class="col-sm-2 col-form-label">
+        Имя</label>
+      <div class="col-sm-10">
+        <input class="form-control" id="name" name="name"
+          value="{{ name }}">
+      </div>
+    </div>
+    <div class="form-group row">
+      <label for="email" class="col-sm-2 col-form-label">
+        Электронная почта</label>
+      <div class="col-sm-10">
+        <input type="email" class="form-control" id="email"
+          name="email" value="{{ email }}">
+      </div>
+    </div>
+    <div class="form-group row">
+      <div class="col-sm-10 offset-sm-2">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox"
+            id="entered" name="entered" value="on"
+            {% if entered %} checked {% endif %}>
+          <label class="form-check-label" for="entered">
+            На территории конференции
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox"
+            id="vip" name="vip" value="on"
+            {% if vip %} checked {% endif %}>
+          <label class="form-check-label" for="vip">
+            VIP
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group row">
+      <div class="col-sm-10 offset-sm-2">
+        <button type="submit" class="btn btn-primary">
+          Сохранить</button>
+
+        <button type="submit" formaction="/delete"
+          class="btn btn-danger">Удалить</button>
+      </div>
+    </div>
+  </form>
+{% endblock %}
