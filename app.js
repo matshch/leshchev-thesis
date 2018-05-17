@@ -40,6 +40,14 @@ app.get('/', async function (req, res) {
   })
 })
 
+app.get('/get/:id', async function (req, res) {
+  const doc = await db.get(req.params.id)
+  res.render('get', {
+    ...doc,
+    $original: doc
+  })
+})
+
 app.get('/create', (req, res) => {
   res.render('create')
 })
@@ -50,7 +58,23 @@ app.post('/saveCreated', (req, res) => {
     entered: req.body.entered === 'on',
     vip: req.body.vip === 'on'
   }
-  db.create(doc).then(r => res.json(r))
+  db.create(doc).then(r => res.redirect('/'))
+})
+
+app.post('/saveChanged', (req, res) => {
+  const doc = {
+    ...req.body,
+    entered: req.body.entered === 'on',
+    vip: req.body.vip === 'on'
+  }
+  const orig = JSON.parse(doc.$original)
+  delete doc.$original
+  db.update(doc, orig).then(r => res.redirect('/'))
+})
+
+app.post('/delete', (req, res) => {
+  const orig = JSON.parse(req.body.$original)
+  db.delete(orig._id, orig._rev).then(r => res.redirect('/'))
 })
 
 app.listen(3000,

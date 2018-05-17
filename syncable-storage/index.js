@@ -327,6 +327,8 @@ exports = module.exports = config => {
     update: async function (doc, orig) {
       const keys = new Set(
         Object.keys(doc).concat(Object.keys(orig)))
+      keys.delete('_id')
+      keys.delete('_rev')
       keys.delete('$times')
       const now = new Date().valueOf()
 
