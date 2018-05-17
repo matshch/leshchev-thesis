@@ -284,6 +284,17 @@ exports = module.exports = config => {
     return Promise.map(revs, r => db.getAsync(id, {rev: r}))
   }
 
+  async function fixIt (doc) {
+    while (doc._conflicts !== undefined) {
+      const revs = [doc._rev, ...doc._conflicts]
+      const confs = await getAllRevs(doc._id, doc._conflicts)
+      const best = mergeAll([doc, ...confs])
+      await db.bulkAsync(prepareMergeResult(best, revs))
+      doc = await db.getAsync(doc._id, {conflicts: true})
+    }
+    return doc
+  }
+
   // Passing CRUD operations
   return {
     create: doc => {
@@ -297,14 +308,7 @@ exports = module.exports = config => {
     },
     get: async function (id) {
       let result = await db.getAsync(id, {conflicts: true})
-      while (result._conflicts !== undefined) {
-        const revs = [result._rev, ...result._conflicts]
-        const confs = await getAllRevs(id, result._conflicts)
-        const best = mergeAll([result, ...confs])
-        await db.bulkAsync(prepareMergeResult(best, revs))
-        result = await db.getAsync(id, {conflicts: true})
-      }
-      return result
+      return fixIt(result)
     },
     update: async function (doc, orig) {
       const keys = new Set(
@@ -382,10 +386,11 @@ exports = module.exports = config => {
         }
       }
     },
-    list: () => db.listAsync({include_docs: true}).then(res =>
-      // TODO: process conflicts
-      res.rows.map(e => e.doc)
-    ),
+    list: () => db.listAsync({
+      include_docs: true,
+      conflicts: true
+    }).then(res => res.rows.map(e => e.doc))
+      .then(list => Promise.map(list, fixIt)),
     getMaster: () => Promise.resolve(currentMaster)
   }
 }
