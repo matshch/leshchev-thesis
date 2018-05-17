@@ -27,15 +27,17 @@
     </div>
   {% endif %}
 
-  <div class="alert alert-info">
-    Ведущий сервер:
-    {% if master_url %}
-      <a href="{{ master_url }}/_utils/" target="_blank">
-      {{ master_url }}</a>
-    {% else %}
-      недоступен.
-    {% endif %}
-  </div>
+  {% if not master %}
+    <div class="alert alert-info">
+      Ведущий сервер:
+      {% if master_url %}
+        <a href="{{ master_url }}/_utils/" target="_blank">
+        {{ master_url }}</a>
+      {% else %}
+        недоступен.
+      {% endif %}
+    </div>
+  {% endif %}
 
   <div class="card">
     <div class="card-header">
