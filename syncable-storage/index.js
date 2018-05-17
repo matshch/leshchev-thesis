@@ -306,7 +306,7 @@ exports = module.exports = config => {
       }
       return result
     },
-    update: (doc, orig) => {
+    update: async function (doc, orig) {
       const keys = new Set(
         Object.keys(doc).concat(Object.keys(orig)))
       keys.delete('$times')
@@ -326,8 +326,32 @@ exports = module.exports = config => {
         }
       }
 
-      // TODO: process conflicts
-      return db.insertAsync(doc)
+      try {
+        const result = await db.insertAsync(doc)
+        return result
+      } catch (e) {
+        if (e.error !== 'conflict') {
+          throw e
+        }
+        while (true) {
+          let res = await db.getAsync(doc._id,
+            {conflicts: true})
+          let revs = [res._rev]
+          let confs = [res]
+          if (res._conflicts) {
+            revs = [res._rev, ...res._conflicts]
+            const confsToAdd = await getAllRevs(doc._id,
+              res._conflicts)
+            confs = [res, ...confsToAdd]
+          }
+          const best = mergeAll([doc, ...confs])
+          res = await db.bulkAsync(prepareMergeResult(best,
+            revs))
+          if (res[0].ok) {
+            return res[0]
+          }
+        }
+      }
     },
     delete: async function (id, rev) {
       let result
