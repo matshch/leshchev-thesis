@@ -89,6 +89,57 @@ function updateReplication (couch, local, target, name) {
   })
 }
 
+function merge (a, b) {
+  const res = JSON.parse(JSON.stringify(a))
+  if (res._conflicts) {
+    delete res._conflicts
+  }
+  const keys = new Set(
+    Object.keys(a.$times).concat(Object.keys(b.$times)))
+
+  for (const key of keys) {
+    if (a.$times[key] === b.$times[key]) {
+      continue
+    } else if (a.$times[key] === undefined) {
+      res[key] = b[key]
+      res.$times[key] = b.$times[key]
+    } else if (b.$times[key] === undefined) {
+      res[key] = a[key]
+      res.$times[key] = a.$times[key]
+    } else if (a.$times[key] < b.$times[key]) {
+      res[key] = b[key]
+      res.$times[key] = b.$times[key]
+    } else {
+      res[key] = a[key]
+      res.$times[key] = a.$times[key]
+    }
+  }
+
+  return res
+}
+
+function mergeAll (list) {
+  if (list.length === 1) {
+    return list[0]
+  } else {
+    const head = list[0]
+    const tail = list.slice(1)
+    return tail.reduce(merge, head)
+  }
+}
+
+function prepareMergeResult (doc, revs) {
+  doc._rev = revs[0]
+  const docs = [doc].concat(revs.slice(1).map(r => ({
+    _id: doc._id,
+    _rev: r,
+    _deleted: true
+  })))
+  return {
+    docs: docs
+  }
+}
+
 exports = module.exports = config => {
   const nodesDb = config.name + '/$nodes'
   const repDb = config.name + '/_replicator'
@@ -229,6 +280,10 @@ exports = module.exports = config => {
       })
   }
 
+  function getAllRevs (id, revs) {
+    return Promise.map(revs, r => db.getAsync(id, {rev: r}))
+  }
+
   // Passing CRUD operations
   return {
     create: doc => {
@@ -240,9 +295,16 @@ exports = module.exports = config => {
       }
       return db.insertAsync(doc)
     },
-    get: id => {
-      // TODO: process conflicts
-      return db.getAsync(id)
+    get: async function (id) {
+      let result = await db.getAsync(id, {conflicts: true})
+      while (result._conflicts !== undefined) {
+        const revs = [result._rev, ...result._conflicts]
+        const confs = await getAllRevs(id, result._conflicts)
+        const best = mergeAll([result, ...confs])
+        await db.bulkAsync(prepareMergeResult(best, revs))
+        result = await db.getAsync(id, {conflicts: true})
+      }
+      return result
     },
     update: (doc, orig) => {
       const keys = new Set(
