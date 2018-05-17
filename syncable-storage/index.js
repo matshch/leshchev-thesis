@@ -154,7 +154,7 @@ exports = module.exports = config => {
   // const replicator = couch.use(repDb)
 
   // Create replicatable databases
-  doAndIgnore(couch.db.createAsync(config.name))
+  const dbPro = doAndIgnore(couch.db.createAsync(config.name))
   doAndIgnore(couch.db.createAsync(nodesDb)).then(() => {
     // Write our information
     const iAm = {
@@ -297,7 +297,7 @@ exports = module.exports = config => {
 
   if (config.process_conflicts) {
     console.log('Enabling conflict processing on all docs')
-    db.follow({
+    dbPro.then(() => db.follow({
       include_docs: true,
       conflicts: true
     }, function (error, change) {
@@ -306,7 +306,7 @@ exports = module.exports = config => {
       } else {
         fixIt(change.doc)
       }
-    })
+    }))
   }
 
   // Passing CRUD operations
