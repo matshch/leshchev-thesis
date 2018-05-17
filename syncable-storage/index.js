@@ -295,6 +295,20 @@ exports = module.exports = config => {
     return doc
   }
 
+  if (config.process_conflicts) {
+    console.log('Enabling conflict processing on all docs')
+    db.follow({
+      include_docs: true,
+      conflicts: true
+    }, function (error, change) {
+      if (error) {
+        console.warn('Follow returned error', error)
+      } else {
+        fixIt(change.doc)
+      }
+    })
+  }
+
   // Passing CRUD operations
   return {
     create: doc => {
