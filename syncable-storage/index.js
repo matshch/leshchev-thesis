@@ -267,9 +267,34 @@ exports = module.exports = config => {
       // TODO: process conflicts
       return db.insertAsync(doc)
     },
-    delete: (id, rev) => {
-      // TODO: process conflicts
-      return db.destroyAsync(id, rev)
+    delete: async function (id, rev) {
+      let result
+      try {
+        result = await db.destroyAsync(id, rev)
+      } catch (e) {}
+      while (true) {
+        try {
+          const obj = await db.getAsync(id, {conflicts: true})
+          let revs = [obj._rev]
+          if (obj._conflicts) {
+            revs = [...revs, ...obj._conflicts]
+          }
+          const res = await db.bulkAsync({
+            docs: revs.map(r => ({
+              _id: id,
+              _rev: r,
+              _deleted: true
+            }))
+          })
+          result = res[0]
+        } catch (e) {
+          if (e.error === 'not_found') {
+            return result
+          } else {
+            throw e
+          }
+        }
+      }
     },
     list: () => db.listAsync({include_docs: true}).then(res =>
       // TODO: process conflicts
