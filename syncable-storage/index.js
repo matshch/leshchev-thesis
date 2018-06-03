@@ -309,70 +309,84 @@ exports = module.exports = config => {
     }))
   }
 
+  const updateObject = async function (doc, orig) {
+    doc = {
+      ...orig,
+      ...doc,
+      _id: orig._id,
+      _rev: orig._rev,
+      $times: orig.$times
+    }
+
+    const keys = new Set(Object.keys(doc))
+    keys.delete('_id')
+    keys.delete('_rev')
+    keys.delete('$times')
+    const now = new Date().valueOf()
+
+    for (const key of keys) {
+      if (doc[key] !== orig[key]) {
+        // Maybe it is just not values?..
+        if (JSON.stringify(doc[key]) !==
+          JSON.stringify(orig[key])) {
+          doc.$times[key] = now
+        }
+      }
+    }
+
+    try {
+      const result = await db.insertAsync(doc)
+      return result
+    } catch (e) {
+      if (e.error !== 'conflict') {
+        throw e
+      }
+      while (true) {
+        let res = await db.getAsync(doc._id,
+          {conflicts: true})
+        let revs = [res._rev]
+        let confs = [res]
+        if (res._conflicts) {
+          revs = [res._rev, ...res._conflicts]
+          const confsToAdd = await getAllRevs(doc._id,
+            res._conflicts)
+          confs = [res, ...confsToAdd]
+        }
+        const best = mergeAll([doc, ...confs])
+        res = await db.bulkAsync(prepareMergeResult(best,
+          revs))
+        if (res[0].ok) {
+          return res[0]
+        }
+      }
+    }
+  }
+
   // Passing CRUD operations
   return {
-    create: doc => {
+    create: async function (doc) {
       const keys = Object.keys(doc)
       const now = new Date().valueOf()
       doc.$times = {}
       for (const key of keys) {
         doc.$times[key] = now
       }
-      return db.insertAsync(doc)
+      try {
+        let result = db.insertAsync(doc)
+        return result
+      } catch (e) {
+        if (doc._id) {
+          let old = await db.getAsync(doc._id, {conflicts: true})
+          old = fixIt(old)
+          return updateObject(doc, old)
+        }
+      }
     },
     get: async function (id) {
       let result = await db.getAsync(id, {conflicts: true})
       return fixIt(result)
     },
-    update: async function (doc, orig) {
-      const keys = new Set(
-        Object.keys(doc).concat(Object.keys(orig)))
-      keys.delete('_id')
-      keys.delete('_rev')
-      keys.delete('$times')
-      const now = new Date().valueOf()
-
-      doc._id = orig._id
-      doc._rev = orig._rev
-      doc.$times = orig.$times
-
-      for (const key of keys) {
-        if (doc[key] !== orig[key]) {
-          // Maybe it is just not values?..
-          if (JSON.stringify(doc[key]) !==
-            JSON.stringify(orig[key])) {
-            doc.$times[key] = now
-          }
-        }
-      }
-
-      try {
-        const result = await db.insertAsync(doc)
-        return result
-      } catch (e) {
-        if (e.error !== 'conflict') {
-          throw e
-        }
-        while (true) {
-          let res = await db.getAsync(doc._id,
-            {conflicts: true})
-          let revs = [res._rev]
-          let confs = [res]
-          if (res._conflicts) {
-            revs = [res._rev, ...res._conflicts]
-            const confsToAdd = await getAllRevs(doc._id,
-              res._conflicts)
-            confs = [res, ...confsToAdd]
-          }
-          const best = mergeAll([doc, ...confs])
-          res = await db.bulkAsync(prepareMergeResult(best,
-            revs))
-          if (res[0].ok) {
-            return res[0]
-          }
-        }
-      }
-    },
+    update: updateObject,
     delete: async function (id, rev) {
       let result
       try {
