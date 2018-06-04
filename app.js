@@ -27,13 +27,17 @@ app.use('/popper.js',
   express.static('node_modules/popper.js/dist'))
 
 const db = storage(config.db)
+const localUrl = config.local_url ?
+  config.local_url.replace(/\/$/, "") :
+  "http://localhost:5984"
 
 app.get('/', async function (req, res) {
   const list = await db.list()
   const masterUrl = await db.getMaster()
 
   res.render('index', {
-    bad_url: config.db.local_url.includes('localhost'),
+    bad_url: config.db.my_url.includes('localhost'),
+    local_url: localUrl,
     list: list,
     master_url: masterUrl,
     master: !config.db.seed,
@@ -46,12 +50,15 @@ app.get('/get/:id', async function (req, res) {
   const doc = await db.get(req.params.id)
   res.render('get', {
     ...doc,
+    local_url: localUrl,
     $original: doc
   })
 })
 
 app.get('/create', (req, res) => {
-  res.render('create')
+  res.render('create', {
+    local_url: localUrl
+  })
 })
 
 app.post('/saveCreated', (req, res) => {

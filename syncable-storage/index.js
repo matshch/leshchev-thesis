@@ -140,7 +140,37 @@ function prepareMergeResult (doc, revs) {
   }
 }
 
+const defaultConfig = {
+  "db": {
+    "local_url": "http://localhost:5984",
+    "priority": 100,
+    "process_conflicts": true,
+    "keep_alive": 2000,
+    "retry_master": 10000
+  }
+}
+
 exports = module.exports = config => {
+  config = {
+    ...defaultConfig,
+    ...config
+  }
+
+  if (!config.uuid) {
+    throw new Error("Невозможно запустить распределенную" +
+      " подсистему хранения информации без config.uuid.")
+  }
+
+  if (!config.my_url) {
+    throw new Error("Невозможно запустить распределенную" +
+      " подсистему хранения информации без config.my_url.")
+  }
+
+  if (!config.name) {
+    throw new Error("Невозможно запустить распределенную" +
+      " подсистему хранения информации без config.name.")
+  }
+
   const nodesDb = config.name + '/$nodes'
   const repDb = config.name + '/_replicator'
 
@@ -159,7 +189,7 @@ exports = module.exports = config => {
     // Write our information
     const iAm = {
       _id: config.uuid,
-      url: config.local_url,
+      url: config.my_url,
       priority: config.priority
     }
     nodes.getAsync(config.uuid).then(doc => {
