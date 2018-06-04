@@ -141,13 +141,11 @@ function prepareMergeResult (doc, revs) {
 }
 
 const defaultConfig = {
-  "db": {
-    "local_url": "http://localhost:5984",
-    "priority": 100,
-    "process_conflicts": true,
-    "keep_alive": 2000,
-    "retry_master": 10000
-  }
+  local_url: "http://localhost:5984",
+  priority: 100,
+  process_conflicts: false,
+  keep_alive: 2000,
+  retry_master: 10000
 }
 
 exports = module.exports = config => {
