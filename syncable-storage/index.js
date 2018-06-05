@@ -243,7 +243,7 @@ exports = module.exports = config => {
           }
           console.log('Found new master', node.url)
           currentMaster = node.url
-          updateReplication(couch, 'http://localhost:5984/',
+          updateReplication(couch, config.local_url,
             node.url, config.name).then(() =>
             setTimeout(checkReplication,
               config.keep_alive)
@@ -252,7 +252,7 @@ exports = module.exports = config => {
         }
       }
       console.warn('No masters found, will try later')
-      updateReplication(couch, 'http://localhost:5984/',
+      updateReplication(couch, config.local_url,
         undefined, config.name).then(() =>
         setTimeout(checkReplication,
           config.retry_master)
