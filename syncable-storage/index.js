@@ -407,6 +407,8 @@ exports = module.exports = config => {
           let old = await db.getAsync(doc._id, {conflicts: true})
           old = fixIt(old)
           return updateObject(doc, old)
+        } else {
+          throw e
         }
       }
     },
