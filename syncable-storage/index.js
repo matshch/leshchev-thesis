@@ -176,7 +176,7 @@ exports = module.exports = config => {
     encodeURIComponent(repDb) + '/'
 
   // Create connection objects
-  const couch = myNano('http://localhost:5984/')
+  const couch = myNano(couch.local_url)
   const db = couch.use(config.name)
   const nodes = couch.use(nodesDb)
   // const replicator = couch.use(repDb)
