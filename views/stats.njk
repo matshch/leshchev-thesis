@@ -1,0 +1,116 @@
+{% extends "template.njk" %}
+
+{% block header %}
+  Статистика по посетителям
+{% endblock %}
+
+{% block body %}
+  <div class="row">
+    <div class="col-sm-6">
+      <div class="card">
+        <div class="card-body"
+          style="position: relative;
+          height:35vh; width:100%">
+          <canvas id="vip_chart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6">
+      <div class="card">
+        <div class="card-body"
+          style="position: relative;
+          height:35vh; width:100%">
+          <canvas id="att_chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div><br>
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="card">
+        <div class="card-body"
+          style="position: relative;
+          height:40vh; width:100%">
+          <canvas id="graph_chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script type="text/javascript">
+    var vip_ctx = document.getElementById("vip_chart");
+    new Chart(vip_ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ["VIP", "Не VIP"],
+        datasets: [{
+          data: [{{ vip }}, {{ not_vip }}],
+          backgroundColor: [
+            "rgb(255, 205, 86)",
+            "rgb(54, 162, 235)"
+          ]
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        legend: {
+          position: 'left'
+        }
+      }
+    });
+
+    var att_ctx = document.getElementById("att_chart");
+    new Chart(att_ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ["На территории", "Не на территории"],
+        datasets: [{
+          fill: false,
+          data: [{{ entered }}, {{ not_entered }}],
+          backgroundColor: [
+            "rgb(255, 99, 132)",
+            "rgb(54, 162, 235)"
+          ]
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        legend: {
+          position: 'left'
+        }
+      }
+    });
+
+    var graph_ctx = document.getElementById("graph_chart");
+    new Chart(graph_ctx, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: "Количество изменений",
+          data: {{ graph | safe }},
+          borderColor: "rgb(75, 192, 192)"
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        elements: {
+          line: {
+            tension: 0.1
+          }
+        },
+        scales: {
+          xAxes: [{
+            type: 'time'
+          }],
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+    });
+  </script>
+{% endblock %}
