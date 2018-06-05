@@ -200,7 +200,7 @@ exports = module.exports = config => {
 
   if (config.seed) {
     // Replicate from seed
-    updateReplication(couch, 'http://localhost:5984/',
+    updateReplication(couch, config.local_url,
       config.seed, config.name).then(() =>
       setTimeout(checkReplication, config.keep_alive)
     )
