@@ -52,40 +52,42 @@ function updateReplication (couch, local, target, name) {
 
   return new Promise((resolve, reject) => {
     // Recreate replicator database
-    doAndIgnore(couch.db.destroyAsync(repDb)).then(() => {
-      couch.db.createAsync(repDb).then(() => {
-        if (!target) {
-          resolve()
-          return
-        }
-        // Everything is ready
-        const nodesDbUri = encodeURIComponent(nodesDb)
+    doAndIgnore(couch.db.destroyAsync(repDb))
+      .then(() => {
+        couch.db.createAsync(repDb).then(() => {
+          if (!target) {
+            resolve()
+            return
+          }
+          // Everything is ready
+          const nodesDbUri = encodeURIComponent(nodesDb)
 
-        const pullNodes = replicator.insertAsync({
-          source: target + '/' + nodesDbUri,
-          target: local + '/' + nodesDbUri,
-          continuous: true
-        }, PULL_NODES)
-        const pushNodes = replicator.insertAsync({
-          source: local + '/' + nodesDbUri,
-          target: target + '/' + nodesDbUri,
-          continuous: true
-        }, PUSH_NODES)
-        const pullDb = replicator.insertAsync({
-          source: target + '/' + name,
-          target: local + '/' + name,
-          continuous: true
-        }, PULL_DB)
-        const pushDb = replicator.insertAsync({
-          source: local + '/' + name,
-          target: target + '/' + name,
-          continuous: true
-        }, PUSH_DB)
+          const pullNodes = replicator.insertAsync({
+            source: target + '/' + nodesDbUri,
+            target: local + '/' + nodesDbUri,
+            continuous: true
+          }, PULL_NODES)
+          const pushNodes = replicator.insertAsync({
+            source: local + '/' + nodesDbUri,
+            target: target + '/' + nodesDbUri,
+            continuous: true
+          }, PUSH_NODES)
+          const pullDb = replicator.insertAsync({
+            source: target + '/' + name,
+            target: local + '/' + name,
+            continuous: true
+          }, PULL_DB)
+          const pushDb = replicator.insertAsync({
+            source: local + '/' + name,
+            target: target + '/' + name,
+            continuous: true
+          }, PUSH_DB)
 
-        Promise.join(pullNodes, pushNodes, pullDb, pushDb,
-          () => resolve())
+          Promise.join(
+            pullNodes, pushNodes, pullDb, pushDb,
+            () => resolve())
+        })
       })
-    })
   })
 }
 
@@ -141,7 +143,7 @@ function prepareMergeResult (doc, revs) {
 }
 
 const defaultConfig = {
-  local_url: "http://localhost:5984",
+  local_url: 'http://localhost:5984',
   priority: 100,
   process_conflicts: false,
   keep_alive: 2000,
@@ -155,18 +157,21 @@ exports = module.exports = config => {
   }
 
   if (!config.uuid) {
-    throw new Error("Невозможно запустить распределенную" +
-      " подсистему хранения информации без config.uuid.")
+    throw new Error('Невозможно запустить ' +
+      'распределенную подсистему хранения информации ' +
+      'без config.uuid.')
   }
 
   if (!config.my_url) {
-    throw new Error("Невозможно запустить распределенную" +
-      " подсистему хранения информации без config.my_url.")
+    throw new Error('Невозможно запустить ' +
+      'распределенную подсистему хранения информации ' +
+      'без config.my_url.')
   }
 
   if (!config.name) {
-    throw new Error("Невозможно запустить распределенную" +
-      " подсистему хранения информации без config.name.")
+    throw new Error('Невозможно запустить ' +
+      'распределенную подсистему хранения информации ' +
+      'без config.name.')
   }
 
   const nodesDb = config.name + '/$nodes'
@@ -182,7 +187,8 @@ exports = module.exports = config => {
   // const replicator = couch.use(repDb)
 
   // Create replicatable databases
-  const dbPro = doAndIgnore(couch.db.createAsync(config.name))
+  const dbPro = doAndIgnore(
+    couch.db.createAsync(config.name))
   doAndIgnore(couch.db.createAsync(nodesDb)).then(() => {
     // Write our information
     const iAm = {
@@ -213,14 +219,15 @@ exports = module.exports = config => {
 
   function reselectMaster () {
     // Prepare list of applicable masters
-    return nodes.listAsync({include_docs: true}).then(res => {
-      return res.rows
-        .map(e => e.doc)
-        .filter(e => e._id !== config.uuid)
-        .sort((a, b) => (a.priority - b.priority ||
+    return nodes.listAsync({include_docs: true}).then(
+      res => {
+        return res.rows
+          .map(e => e.doc)
+          .filter(e => e._id !== config.uuid)
+          .sort((a, b) => (a.priority - b.priority ||
           ((a._id < b._id) ? -1
             : ((a._id > b._id) ? 1 : 0))))
-    }).then(list => {
+      }).then(list => {
       if (list.some(e => e.url === config.seed)) {
         return list
       } else {
@@ -270,15 +277,18 @@ exports = module.exports = config => {
       return
     }
 
-    const pullNodes = couch.requestAsync(schUrl + PULL_NODES)
-    const pushNodes = couch.requestAsync(schUrl + PUSH_NODES)
+    const pullNodes = couch.requestAsync(
+      schUrl + PULL_NODES)
+    const pushNodes = couch.requestAsync(
+      schUrl + PUSH_NODES)
     const pullDb = couch.requestAsync(schUrl + PULL_DB)
     const pushDb = couch.requestAsync(schUrl + PUSH_DB)
 
     const remote = pullNodes.then(
       e => myNano(e.source).infoAsync().reflect())
 
-    Promise.join(pullNodes, pushNodes, pullDb, pushDb, remote,
+    Promise.join(
+      pullNodes, pushNodes, pullDb, pushDb, remote,
       (pullNodes, pushNodes, pullDb, pushDb, remote) => {
         const goodState = state =>
           state === 'running' || state === null
@@ -297,7 +307,8 @@ exports = module.exports = config => {
           // All good
           if ((new Date() - lastReselect) <
             config.retry_master) {
-            setTimeout(checkReplication, config.keep_alive)
+            setTimeout(
+              checkReplication, config.keep_alive)
           } else {
             // Maybe we need new master
             reselectMaster().then(() => {
@@ -309,13 +320,15 @@ exports = module.exports = config => {
   }
 
   function getAllRevs (id, revs) {
-    return Promise.map(revs, r => db.getAsync(id, {rev: r}))
+    return Promise.map(revs,
+      r => db.getAsync(id, {rev: r}))
   }
 
   async function fixIt (doc) {
     while (doc._conflicts !== undefined) {
       const revs = [doc._rev, ...doc._conflicts]
-      const confs = await getAllRevs(doc._id, doc._conflicts)
+      const confs = await getAllRevs(
+        doc._id, doc._conflicts)
       const best = mergeAll([doc, ...confs])
       await db.bulkAsync(prepareMergeResult(best, revs))
       doc = await db.getAsync(doc._id, {conflicts: true})
@@ -324,7 +337,8 @@ exports = module.exports = config => {
   }
 
   if (config.process_conflicts) {
-    console.log('Enabling conflict processing on all docs')
+    console.log('Enabling conflict processing on all ' +
+      'incoming docs')
     dbPro.then(() => db.follow({
       include_docs: true,
       conflicts: true
@@ -404,7 +418,8 @@ exports = module.exports = config => {
         return result
       } catch (e) {
         if (doc._id) {
-          let old = await db.getAsync(doc._id, {conflicts: true})
+          let old = await db.getAsync(
+            doc._id, {conflicts: true})
           old = fixIt(old)
           return updateObject(doc, old)
         } else {
@@ -413,7 +428,8 @@ exports = module.exports = config => {
       }
     },
     get: async function (id) {
-      let result = await db.getAsync(id, {conflicts: true})
+      let result = await db.getAsync(
+        id, {conflicts: true})
       return fixIt(result)
     },
     update: updateObject,
@@ -424,7 +440,8 @@ exports = module.exports = config => {
       } catch (e) {}
       while (true) {
         try {
-          const obj = await db.getAsync(id, {conflicts: true})
+          const obj = await db.getAsync(
+            id, {conflicts: true})
           let revs = [obj._rev]
           if (obj._conflicts) {
             revs = [...revs, ...obj._conflicts]

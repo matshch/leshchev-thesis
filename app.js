@@ -27,9 +27,9 @@ app.use('/popper.js',
   express.static('node_modules/popper.js/dist'))
 
 const db = storage(config.db)
-const localUrl = config.local_url ?
-  config.local_url.replace(/\/$/, "") :
-  "http://localhost:5984"
+const localUrl = config.local_url
+  ? config.local_url.replace(/\/$/, '')
+  : 'http://localhost:5984'
 
 app.get('/', async function (req, res) {
   const list = await db.list()
@@ -64,10 +64,10 @@ app.get('/create', (req, res) => {
 app.get('/stats', async function (req, res) {
   const list = await db.list()
   const vip = list.filter(e => e.vip).length
-  const not_vip = list.length - vip
+  const notVip = list.length - vip
 
   const entered = list.filter(e => e.entered).length
-  const not_entered = list.length - entered
+  const notEntered = list.length - entered
 
   const times = {}
 
@@ -115,20 +115,20 @@ app.get('/stats', async function (req, res) {
 
   fullGraph.sort((a, b) => {
     if (a.x > b.x) {
-      return 1;
+      return 1
     }
     if (a.x < b.x) {
-      return -1;
+      return -1
     }
-    return 0;
+    return 0
   })
 
   res.render('stats', {
     local_url: localUrl,
     vip: vip,
-    not_vip: not_vip,
+    not_vip: notVip,
     entered: entered,
-    not_entered: not_entered,
+    not_entered: notEntered,
     graph: JSON.stringify(fullGraph)
   })
 })
@@ -155,7 +155,8 @@ app.post('/saveChanged', (req, res) => {
 
 app.post('/delete', (req, res) => {
   const orig = JSON.parse(req.body.$original)
-  db.delete(orig._id, orig._rev).then(r => res.redirect('/'))
+  db.delete(orig._id, orig._rev).then(
+    r => res.redirect('/'))
 })
 
 app.listen(3000,

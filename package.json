@@ -1,14 +1,16 @@
 {
   "name": "leshchev-thesis",
   "version": "1.0.0",
-  "description": "Artem Leshchev's IU5 BMSTU thesis program",
+  "description":
+    "Artem Leshchev's IU5 BMSTU thesis program",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/matshch/leshchev-thesis.git"
+    "url":
+      "git+https://github.com/matshch/leshchev-thesis.git"
   },
   "keywords": [
     "couchdb",
@@ -18,9 +20,11 @@
   "author": "Artem Leshchev",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/matshch/leshchev-thesis/issues"
+    "url":
+      "https://github.com/matshch/leshchev-thesis/issues"
   },
-  "homepage": "https://github.com/matshch/leshchev-thesis#readme",
+  "homepage":
+    "https://github.com/matshch/leshchev-thesis#readme",
   "dependencies": {
     "bootstrap": "^4.1.1",
     "chart.js": "^2.7.2",
